@@ -1,0 +1,5 @@
+*.bin
+*.o
+*.hex
+out
+.DS_Store
