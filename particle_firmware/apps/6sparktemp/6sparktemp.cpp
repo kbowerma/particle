@@ -1,5 +1,5 @@
 /* 8.12.2015 Kyle Bowerman
-* Last updated on 8.31.2015
+* Last updated on 9.2.2015
 * sparkcore temprature sensors to UBidots
 * from: https://particle.hackster.io/AgustinP/logging-temperature-data-using-the-spark-core
 * from: spark-temp, OLEDTEST, 6SPARKTEMP
@@ -45,7 +45,7 @@ HttpClient http;
   };
   http_request_t request;
   http_response_t response;
-  int displayMode = 4;
+  int displayMode = 2;
   bool debug = true;
   bool gettempflag = true;
   // encoder
@@ -69,6 +69,16 @@ void setup()
   oled.display();  // Display what's in the buffer (splashscreen)
   delay(1000);     // Delay 1000 ms
   oled.clear(PAGE); // Clear the buffer.
+  // display the version at boot for 2 seconds
+  oled.setFontType(1);
+  oled.setCursor(0,8);
+  oled.print(FILENAME);
+  oled.setCursor(0,24);
+  oled.print(MYVERSION);
+  oled.display();
+  oled.setFontType(0);
+  delay(5000);
+
   request.port = 80;
   request.hostname = "things.ubidots.com";
   Serial.begin(9600);
@@ -111,14 +121,21 @@ void loop()
     oled.clear(PAGE); // Clear the buffer.
     Serial << " The device Count Changed " << lastDeviceCount << " " <<  deviceCount << endl;
   }
-  // only do these things every GETTEMPFEQ loops
-  if (mycounter % GETTEMPFEQ == 0 ) {
+  // only do these things every GETTEMPFEQ loops or before I get to the first GETTEMPFREQ
+  if (mycounter % GETTEMPFEQ == 0 ||  mycounter < GETTEMPFEQ ) {
     deviceCount = getDeviceCount();
     temperatureJob();  // do the main temprature job
     lastDeviceCount = getDeviceCount();  // used to detect
   }
-  if( debug ) Serial << mycounter << " freq: " << freqChecker() << "Hz" << endl;
+  if( debug ) Serial << mycounter << " freq: " << freqChecker() << "Hz | enocderPos: "<< encoderPos << endl;
+
   //encoder
+  if (prevPos != encoderPos) {
+        prevPos = encoderPos;
+        Serial << "encoder position: " << encoderPos << endl;
+        dispatchEncoder();
+  }
+
   /*  Debug values to serial from loop
    for (int i = 0; i < 4; i++ ){
      Serial <<  "the array hardcode version of: " << deviceNames[i] << " " <<  sensor.getTempF(*deviceAddressArray[i]) << endl;
@@ -134,6 +151,7 @@ void dispatchEncoder(){
     if (encoderPos > 4 ) encoderPos = 4;
     if (encoderPos < 0 ) encoderPos = 0;
     setModeFunc(String(encoderPos));
+    temperatureJob();
 }
 
 void doEncoderA(){
@@ -143,6 +161,7 @@ void doEncoderA(){
     if ( A_set && !B_set )
       encoderPos += 1;
   }
+
 }
 
 void doEncoderB(){
@@ -219,7 +238,7 @@ void oDispatch(int tempIndex, float temperature) {
     oPrintInfo();
     }
 
-  Serial << "dispatch called " << endl;
+  Serial << "oled dispatch called " << endl;
 }
 
 void oPrintTemp(int index, float mytemp){
@@ -252,8 +271,9 @@ void oPrintTemp3(int index, float mytemp){
     oled.setFontType(0);
     oled.setCursor(0,0);
     oled.setCursor(0,index*12);
-    //oled.print(passedAddress[7],HEX);  // prints the last byte
-    oled << deviceNames[index];
+    String name = deviceNames[index];
+    String shortname = name.substring(0,4);
+    oled << shortname;
     oled.print(" ");
     if (mytemp > 0 ) {
     oled.print(mytemp);
