@@ -9,10 +9,12 @@
 #define TEMP2_VARIABLE_ID "55cbd3277625421c8977ecea"
 #define TOKEN "hsFRLnMcucOZlfLsQbH9BRbJpveccOc37ksq7eLOtjztxoEpZDA1D2wnWiuP"
 #define UBIVARSIZE 24
-#define PUSHFREQ 500
-#define FILENAME "5sparktemp"
-#define MYVERSION "0.4.1"
+#define PUSHFREQ 300
+#define FILENAME "6sparktemp"
+#define MYVERSION "0.6.20"
 #define GETTEMPFEQ 50
+#define PUSHTOUBIFLAG 1
+
 
 
 //Prototypes

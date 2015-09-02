@@ -25,7 +25,7 @@ DallasTemperature sensor(&oneWire);
 HttpClient http;
 
 //Globals
-  char* ubivar[]={"55cbc6f2762542069b2798a9","55cbd3277625421c8977ecea","55cd69c37625426d64a926d3"};
+  char* ubivar[]={"55cd69c37625426d64a926d3", "55e7168b7625424fc22b1bf9", "55cbc6f2762542069b2798a9","55cbd3277625421c8977ecea"};
   float temperature = 0.0;
   char resultstr[64];
   int deviceCount, lastDeviceCount, lastime, mycounter,thistime, lasttime = 0;
@@ -47,7 +47,7 @@ HttpClient http;
   http_response_t response;
   int displayMode = 4;
   bool debug = true;
-  bool gettempflag, pushtoubiflag = true;  // this doesnt seem to work
+  bool gettempflag = true;
   // encoder
   int encoderA = A0;
   int encoderB = A1;
@@ -109,7 +109,7 @@ void loop()
     oled.display();  // Display what's in the buffer (splashscreen)
     //delay(1000);     // Delay 1000 ms
     oled.clear(PAGE); // Clear the buffer.
-    Serial.println("\n\n The device Count Changed ");
+    Serial << " The device Count Changed " << lastDeviceCount << " " <<  deviceCount << endl;
   }
   // only do these things every GETTEMPFEQ loops
   if (mycounter % GETTEMPFEQ == 0 ) {
@@ -117,29 +117,16 @@ void loop()
     temperatureJob();  // do the main temprature job
     lastDeviceCount = getDeviceCount();  // used to detect
   }
-  if( debug ) Serial << "the freq is: " << freqChecker() << "Hz" << endl;
-
+  if( debug ) Serial << mycounter << " freq: " << freqChecker() << "Hz" << endl;
   //encoder
-  if (prevPos != encoderPos) {
-        prevPos = encoderPos;
-        Serial << "encoder position: " << encoderPos << endl;
-        dispatchEncoder();
-  }
-
-    //*************** testing by hardcoded address Array ******
-
-
   /*  Debug values to serial from loop
    for (int i = 0; i < 4; i++ ){
      Serial <<  "the array hardcode version of: " << deviceNames[i] << " " <<  sensor.getTempF(*deviceAddressArray[i]) << endl;
     }
   */
   lastime = thistime;
-  //thistime = millis();
   delay(500);
   thistime = millis();
-  //displayMode = 4;
-   //oPrintInfo();
 
 }
 
@@ -170,18 +157,24 @@ void doEncoderB(){
 
 void temperatureJob() {
     float gotTemp = 0;
+    Serial << "the device count is " << deviceCount << endl;
     sensor.requestTemperatures();  // get all the tempratures first to speed up, moved up from getTemp()
     for (int i =0; i < deviceCount; i++ ) {
+      //sensor.requestTemperatures();
         gotTemp = sensor.getTempF(*deviceAddressArray[i]);
         Serial << "gotTemp() = "  << i << " " << gotTemp << endl;
         request.body = formatTempToBody(gotTemp, i);
-        if (mycounter % PUSHFREQ == 0  && pushtoubiflag == true ) {
+      //  if (mycounter % PUSHFREQ == 0  && PUSHTOUBIFLAG == 1 ) {
+       if (mycounter % PUSHFREQ == 0  ) {
             String mypath = String("/api/v1.6/variables/");
             mypath.concat(ubivar[i]);
             mypath.concat("/values");
+            Serial << "going to push "<< request.body << " to " << mypath << endl;
             request.path = mypath;
             http.post(request, response, headers);
-            if( debug ) Serial << "http response: " << request.body << endl;
+            if( debug ) Serial << "http body: " << request.body << endl;
+
+            Serial << " Did we reboot?    I hope not ";
         }
       if( debug) debugSerial(i);
 
@@ -279,7 +272,7 @@ void oPrintTemp3(int index, float mytemp){
 void oPrintInfo() {
     oled.clear(PAGE);
     oled.setCursor(0,0);
-    oled.print(FILENAME);
+    oled.print(MYVERSION);
     oled.setCursor(0,10);
    // oled.print("v");
     //oled.print(MYVERSION);
