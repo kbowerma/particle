@@ -11,8 +11,8 @@
 #define UBIVARSIZE 24
 #define PUSHFREQ 300
 #define FILENAME "6sparktemp"
-#define MYVERSION "0.6.20"
-#define GETTEMPFEQ 50
+#define MYVERSION "0.6.30"
+#define GETTEMPFEQ 20
 #define PUSHTOUBIFLAG 1
 
 
