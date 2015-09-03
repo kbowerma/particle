@@ -11,9 +11,10 @@
 #define UBIVARSIZE 24
 #define PUSHFREQ 300
 #define FILENAME "6sparktemp"
-#define MYVERSION "0.6.41"
+#define MYVERSION "0.6.5x"
 #define GETTEMPFEQ 5
 #define PUSHTOUBIFLAG 1
+//#define BUTTON D1
 
 
 
@@ -78,7 +79,7 @@ void temperatureJob();
 *      A6   -
 *      A7
 *      D0
-*      D1
+*      D1   Encoder Button
 *      D2   ONEWIRE bus
 *      D3
 *      D4

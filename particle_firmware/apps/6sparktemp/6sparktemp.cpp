@@ -29,6 +29,8 @@ bool debug = true;
   bool gettempflag = true;
   char* ubivar[]={"55e751bc7625423275a3a625", "55e751df7625423276297c4a", "55e752067625423276297c69","55e75229762542328e46adf6"};
   char resultstr[64];
+  int button = D1;
+  int buttonvalue = 0;
   int displayMode = 2;
   int deviceCount, lastDeviceCount, lastime, mycounter,thistime, lasttime = 0;
   int prevPos = 0;
@@ -99,6 +101,7 @@ void setup()
      //encoder
   pinMode(encoderA, INPUT_PULLUP);
   pinMode(encoderB, INPUT_PULLUP);
+  pinMode(button,INPUT_PULLDOWN);
   attachInterrupt(encoderA, doEncoderA, CHANGE);
   attachInterrupt(encoderB, doEncoderB, CHANGE);
 
@@ -128,7 +131,11 @@ void loop()
     temperatureJob();  // do the main temprature job
     lastDeviceCount = getDeviceCount();  // used to detect
   }
-  if( debug ) Serial << mycounter << " freq: " << freqChecker() << "Hz | enocderPos: "<< encoderPos << endl;
+  buttonvalue =  digitalRead(button);
+  if( debug ) {
+    Serial << mycounter << " freq: " << freqChecker() << "Hz | enocderPos: ";
+    Serial << encoderPos << " | buttonvalue: " << buttonvalue << endl;
+  }
 
   //encoder
   if (prevPos != encoderPos) {
