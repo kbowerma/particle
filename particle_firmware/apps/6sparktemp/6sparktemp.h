@@ -11,41 +11,35 @@
 #define UBIVARSIZE 24
 #define PUSHFREQ 300
 #define FILENAME "6sparktemp"
-#define MYVERSION "0.6.40"
-#define GETTEMPFEQ 20
+#define MYVERSION "0.6.41"
+#define GETTEMPFEQ 5
 #define PUSHTOUBIFLAG 1
 
 
 
+
 //Prototypes
-void printAddress(DeviceAddress deviceAddress);
-int queryDevices(String command);
-int setmode(String command);
-int printEEProm(String command);
-int regDevice(String command);
-void oDispatch(int tempIndex, float mytemp);
-void oPrintTemp3(int index, float mytemp);
+char *formatTempToBody(float temperature, int tempIndex);
+String convertMillisToHuman(int ms);
+void debugSerial(int i );
+void dispatchEncoder();
 void doEncoderA();
 void doEncoderB();
-int setModeFunc(String command);
-int printEEPROMFunc(String command);
-int getDeviceCount();
-void temperatureJob();
 double freqChecker();
-String convertMillisToHuman(int ms);
-void dispatchEncoder();
-void dispatchEncoder();
-void doEncoderA();
-void doEncoderA();
-int printEEPROMFunc(String command);
-int setModeFunc(String command);
-int regDeviceFunc(String command);
-char *getTemp(int tempIndex);
-void debugSerial(int i );
+int getDeviceCount();
+void oDispatch(int tempIndex, float mytemp);
+void oPrintInfo();
 void oPrintTemp(int index, float mytemp);
 void oPrintTemp2(int index, float mytemp);
-void oPrintInfo();
-char *formatTempToBody(float temperature, int tempIndex);
+void oPrintTemp3(int index, float mytemp);
+void printAddress(DeviceAddress deviceAddress);
+int printEEPROMFunc(String command);
+int queryDevices(String command);
+int regDevice(String command);
+int regDeviceFunc(String command);
+int setModeFunc(String command);
+int setmode(String command);
+void temperatureJob();
 
 
 /* Device Addresses

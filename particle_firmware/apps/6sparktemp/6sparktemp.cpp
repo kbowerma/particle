@@ -10,26 +10,35 @@
 */
 
 #include "application.h"
-#include "lib/streaming/firmware/spark-streaming.h"
-#include "lib/SparkFun_Micro_OLED_Particle_Library/firmware/SparkFunMicroOLED.h"
-#include "math.h"
-#include "lib/HttpClient/firmware/HttpClient.h"
-#include "lib/OneWire/OneWire.h"
-#include "lib/SparkDallas/spark-dallas-temperature.h"
-#include "6sparktemp.h"
+ #include "lib/streaming/firmware/spark-streaming.h"
+ #include "lib/SparkFun_Micro_OLED_Particle_Library/firmware/SparkFunMicroOLED.h"
+ #include "math.h"
+ #include "lib/HttpClient/firmware/HttpClient.h"
+ #include "lib/OneWire/OneWire.h"
+ #include "lib/SparkDallas/spark-dallas-temperature.h"
+ #include "6sparktemp.h"
 
 //Declarations
 MicroOLED oled;
-OneWire oneWire(ONE_WIRE_BUS);
-DallasTemperature sensor(&oneWire);
-HttpClient http;
+ OneWire oneWire(ONE_WIRE_BUS);
+ DallasTemperature sensor(&oneWire);
+ HttpClient http;
 
 //Globals
-  char* ubivar[]={"55cd69c37625426d64a926d3", "55e7168b7625424fc22b1bf9", "55cbc6f2762542069b2798a9","55cbd3277625421c8977ecea"};
-  float temperature = 0.0;
+bool debug = true;
+  bool gettempflag = true;
+  char* ubivar[]={"55e751bc7625423275a3a625", "55e751df7625423276297c4a", "55e752067625423276297c69","55e75229762542328e46adf6"};
   char resultstr[64];
+  int displayMode = 2;
   int deviceCount, lastDeviceCount, lastime, mycounter,thistime, lasttime = 0;
-  //devices
+  int prevPos = 0;
+  int value = 0;
+  int encoderA = A0;
+  int encoderB = A1;
+  int mydelay = 250;
+  float temperature = 0.0;
+
+ //devices
   DeviceAddress deviceIndexArray[5];  //dynamic Array
   DeviceAddress outsideAddress = { 0x28, 0xe, 0x52, 0x58, 0x6, 0x0, 0x0, 0xe };
   DeviceAddress floorAddress = { 0x28, 0x56, 0xB1, 0x3A, 0x06, 0x00, 0x00, 0x82 };
@@ -37,7 +46,7 @@ HttpClient http;
   DeviceAddress boardAddress = { 0x28, 0x49, 0x2E, 0xE3, 0x02, 0x00, 0x00, 0x29 };
   DeviceAddress*  deviceAddressArray[4] =  { &outsideAddress, &floorAddress, &pitAddress, &boardAddress } ;
   String deviceNames[4]= { "outside", "floor", "pit", "board" };
-  //http
+
   http_header_t headers[] = {
         { "Content-Type", "application/json" },
         { "X-Auth-Token" , TOKEN },
@@ -45,18 +54,10 @@ HttpClient http;
   };
   http_request_t request;
   http_response_t response;
-  int displayMode = 2;
-  bool debug = true;
-  bool gettempflag = true;
-  // encoder
-  int encoderA = A0;
-  int encoderB = A1;
+
   volatile bool A_set = false;
   volatile bool B_set = false;
   volatile int encoderPos = 0;
-  int prevPos = 0;
-  int value = 0;
-
 
 
 
@@ -136,15 +137,46 @@ void loop()
         dispatchEncoder();
   }
 
-  /*  Debug values to serial from loop
-   for (int i = 0; i < 4; i++ ){
-     Serial <<  "the array hardcode version of: " << deviceNames[i] << " " <<  sensor.getTempF(*deviceAddressArray[i]) << endl;
-    }
-  */
+
   lastime = thistime;
-  delay(500);
+  delay(mydelay);
   thistime = millis();
 
+}
+
+char *formatTempToBody(float temperature, int tempIndex) {
+    static char retbuf[64];
+    String s = "{\"value\": ";
+    s.concat(String(temperature));
+    s.concat("}");
+    s.toCharArray(retbuf, 64);
+    oDispatch(tempIndex, temperature);
+    return retbuf;
+
+}
+
+String convertMillisToHuman(int ms) {
+    int seconds, minutes, hours, days = 0;
+    int x = ms / 1000;
+     seconds = x % 60;
+    x /= 60;
+     minutes = x % 60;
+    x /= 60;
+     hours = x % 24;
+    x /= 24;
+    days = x;
+    String t = String(days);
+    t.concat(":");
+    t.concat(String(hours));
+    t.concat(":");
+    t.concat(String(minutes));
+    t.concat(":");
+    t.concat(String(seconds));
+    return String(t);
+}
+
+void debugSerial(int i ) {
+      Serial << "count: " << mycounter << " index " << i << " " << request.body << " dcount "<<  deviceCount << " lcount " << lastDeviceCount << endl;
 }
 
 void dispatchEncoder(){
@@ -174,48 +206,33 @@ void doEncoderB(){
   }
 }
 
-void temperatureJob() {
-    float gotTemp = 0;
-    Serial << "the device count is " << deviceCount << endl;
-    sensor.requestTemperatures();  // get all the tempratures first to speed up, moved up from getTemp()
-    for (int i =0; i < deviceCount; i++ ) {
-      //sensor.requestTemperatures();
-        gotTemp = sensor.getTempF(*deviceAddressArray[i]);
-        Serial << "gotTemp() = "  << i << " " << gotTemp << endl;
-        request.body = formatTempToBody(gotTemp, i);
-      //  if (mycounter % PUSHFREQ == 0  && PUSHTOUBIFLAG == 1 ) {
-       if (mycounter % PUSHFREQ == 0  ) {
-            String mypath = String("/api/v1.6/variables/");
-            mypath.concat(ubivar[i]);
-            mypath.concat("/values");
-            Serial << "going to push "<< request.body << " to " << mypath << endl;
-            request.path = mypath;
-            http.post(request, response, headers);
-            if( debug ) Serial << "http body: " << request.body << endl;
-
-            Serial << " Did we reboot?    I hope not ";
-        }
-      if( debug) debugSerial(i);
-
-    }
+double freqChecker() {
+    double myperiod = (thistime - lastime);
+    double myfrequency = ( 1 / myperiod ) * 1000;
+    return myfrequency;
 }
 
-void debugSerial(int i ) {
-   // if( debug  ) {
-      Serial << "count: " << mycounter << " index " << i << " " << request.body << " dcount "<<  deviceCount << " lcount " << lastDeviceCount << endl;
-    // }
-
+int getDeviceCount() {
+     sensor.begin();
+    deviceCount = sensor.getDeviceCount();
+    return deviceCount;
 }
 
-char *formatTempToBody(float temperature, int tempIndex) {
-    static char retbuf[64];
-    String s = "{\"value\": ";
-    s.concat(String(temperature));
-    s.concat("}");
-    s.toCharArray(retbuf, 64);
-    oDispatch(tempIndex, temperature);
-    return retbuf;
-
+void oPrintInfo() {
+    oled.clear(PAGE);
+    oled.setCursor(0,0);
+    oled.print(MYVERSION);
+    oled.setCursor(0,10);
+    oled << freqChecker() << " Hz";
+    oled.setCursor(0,20);
+    oled.print("pfreq ");
+    oled.print(PUSHFREQ);
+    oled.setCursor(0,30);
+    oled.print("devices ");
+    oled.print(deviceCount);
+    oled.setCursor(0,40);
+    oled.print(convertMillisToHuman(millis()));
+    oled.display();
 }
 
 void oDispatch(int tempIndex, float temperature) {
@@ -259,8 +276,10 @@ void oPrintTemp2(int index, float mytemp){
     oled.setFontType(0);
     oled.setCursor(0,0);
     oled.setCursor(0,index*12);
+    oled.setColor(BLACK);
     oled.print("T");
     oled.print(index);
+    oled.setColor(WHITE);
     oled.print(" ");
     oled.print(mytemp);
     oled.display();
@@ -282,61 +301,11 @@ void oPrintTemp3(int index, float mytemp){
     if (mytemp < 0 ) {
     oled.print("     ");
 
-    Spark.publish("onewireloose", String(index) );
+    Particle.publish("onewireloose", String(index) );
     Serial << "loose of onewire " << mytemp << "index " << index << endl;
     }
     oled.display();
 
-}
-
-void oPrintInfo() {
-    oled.clear(PAGE);
-    oled.setCursor(0,0);
-    oled.print(MYVERSION);
-    oled.setCursor(0,10);
-   // oled.print("v");
-    //oled.print(MYVERSION);
-    //oled.print(Spark.deviceID());
-    oled << freqChecker() << " Hz";
-    oled.setCursor(0,20);
-    oled.print("pfreq ");
-    oled.print(PUSHFREQ);
-     oled.setCursor(0,30);
-     oled.print("devices ");
-     oled.print(deviceCount);
-    oled.setCursor(0,40);
-    oled.print(convertMillisToHuman(millis()));
-    oled.display();
-}
-
-String convertMillisToHuman(int ms) {
-
-    int seconds, minutes, hours, days = 0;
-
-    int x = ms / 1000;
-     seconds = x % 60;
-    x /= 60;
-     minutes = x % 60;
-    x /= 60;
-     hours = x % 24;
-    x /= 24;
-     days = x;
-
-    String t = String(days);
-    t.concat(":");
-    t.concat(String(hours));
-    t.concat(":");
-    t.concat(String(minutes));
-    t.concat(":");
-    t.concat(String(seconds));
-
-    return String(t);
-}
-
-int getDeviceCount() {
-     sensor.begin();
-    deviceCount = sensor.getDeviceCount();
-    return deviceCount;
 }
 
 void printAddress(DeviceAddress deviceAddress) {
@@ -398,7 +367,21 @@ int queryDevices(String command) {
 
         }
         Serial <<  "\n----------------------------------\n" << endl;
+        return 1;
     }
+
+    if(command == "invert" ) {
+      oled.command(INVERTDISPLAY);
+        Serial << "normal display " << endl;
+      return 1;
+    }
+
+    if(command == "normal" ) {
+      Serial << "normal display " << endl;
+      oled.command(NORMALDISPLAY);
+      return 1;
+    }
+
 
 
 
@@ -419,12 +402,28 @@ int setModeFunc(String command){ // now used for display mode and to toggle debu
     }
 }
 
-double freqChecker() {
-    double myperiod = (thistime - lastime);
-    // Serial << "time diff in milli seconds " << thistime - lastime << endl;
-    // Serial << "my debug calc peiriod x1000 " << 1 / (thistime - lastime / 1000 )<< endl;
-    double myfrequency = ( 1 / myperiod ) * 1000;
-    // Serial << "mypieriod " << myperiod << endl;
-    // Serial << "myfrequency " << myfrequency << " Hz " << endl;
-    return myfrequency;
+void temperatureJob() {
+    float gotTemp = 0;
+    Serial << "the device count is " << deviceCount << endl;
+    sensor.requestTemperatures();  // get all the tempratures first to speed up, moved up from getTemp()
+    for (int i =0; i < deviceCount; i++ ) {
+        gotTemp = sensor.getTempF(*deviceAddressArray[i]);
+        if (gotTemp < -195 ) continue;
+        Serial << "gotTemp() = "  << i << " " << gotTemp << endl;
+        request.body = formatTempToBody(gotTemp, i);
+      //  if (mycounter % PUSHFREQ == 0  && PUSHTOUBIFLAG == 1 ) {
+       if (mycounter % PUSHFREQ == 0  ) {
+            String mypath = String("/api/v1.6/variables/");
+            mypath.concat(ubivar[i]);
+            mypath.concat("/values");
+            Serial << "going to push "<< request.body << " to " << mypath << endl;
+            request.path = mypath;
+            http.post(request, response, headers);
+            if( debug ) Serial << "http body: " << request.body << endl;
+
+            Serial << " Did we reboot?    I hope not ";
+        }
+      if( debug) debugSerial(i);
+
+    }
 }
