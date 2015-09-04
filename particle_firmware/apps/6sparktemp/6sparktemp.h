@@ -14,7 +14,7 @@
 #define MYVERSION "0.6.50"
 #define GETTEMPFEQ 5
 #define PUSHTOUBIFLAG 1
-//#define BUTTON D1
+
 
 
 
@@ -81,7 +81,7 @@ void temperatureJob();
 *      D0
 *      D1   Encoder Button
 *      D2   ONEWIRE bus
-*      D3
+*      D3   Relay
 *      D4
 *      D5
 *      D6   OLED D/C

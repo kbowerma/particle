@@ -38,6 +38,7 @@ bool debug = true;
   int encoderA = A0;
   int encoderB = A1;
   int mydelay = 250;
+  int relay = D3;
   float temperature = 0.0;
 
  //devices
@@ -102,6 +103,7 @@ void setup()
   pinMode(encoderA, INPUT_PULLUP);
   pinMode(encoderB, INPUT_PULLUP);
   pinMode(button,INPUT_PULLDOWN);
+  pinMode(relay, OUTPUT);
   attachInterrupt(encoderA, doEncoderA, CHANGE);
   attachInterrupt(encoderB, doEncoderB, CHANGE);
 
@@ -388,6 +390,20 @@ int queryDevices(String command) {
       oled.command(NORMALDISPLAY);
       return 1;
     }
+
+    if(command == "relay_on") {
+      digitalWrite(relay, HIGH);
+      return 1;
+    }
+
+    if(command == "relay_off") {
+      digitalWrite(relay, LOW);
+      return 1;
+    }
+
+    else return -1;
+
+
 
 
 
