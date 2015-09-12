@@ -1,4 +1,4 @@
-TOOLCHAIN := /Users/kylebowerman/Documents/particle/particle_firmware/firmware/
+TOOLCHAIN := /Users/kylebowerman/Documents/particle/photon_firmware/firmware/
 
 PARTICLE_USB := $(shell compgen -f -- "/dev/tty.usbmodem")
 
@@ -24,7 +24,7 @@ build:
 
 flash:	dfu
 	-stty -f $(PARTICLE_USB) 14400
-	particle flash --usb out/$(APPNAME).bin	
+	particle flash --usb out/$(APPNAME).bin
 
 dfu:
 	-stty -f $(PARTICLE_USB) 14400

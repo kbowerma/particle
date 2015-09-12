@@ -189,7 +189,7 @@ void debugSerial(int i ) {
 }
 
 void dispatchEncoder(){
-    if (encoderPos > 4 ) encoderPos = 4;
+    if (encoderPos > 5 ) encoderPos = 5;
     if (encoderPos < 0 ) encoderPos = 0;
     setModeFunc(String(encoderPos));
     temperatureJob();
@@ -244,6 +244,16 @@ void oPrintInfo() {
     oled.display();
 }
 
+void oPrintInfo5() {
+  uint32_t freemem = System.freeMemory();
+    oled.clear(PAGE);
+    oled.setCursor(0,0);
+    oled.print(MYVERSION);
+    oled.setCursor(0,10);
+    oled << "MEMORY: " << endl << freemem;
+    oled.display();
+}
+
 void oDispatch(int tempIndex, float temperature) {
 
     if (displayMode == 0 ) {
@@ -262,6 +272,9 @@ void oDispatch(int tempIndex, float temperature) {
     }
     if (displayMode == 4 ) {
     oPrintInfo();
+    }
+    if (displayMode == 5 ) {
+    oPrintInfo5();
     }
 
   Serial << "oled dispatch called " << endl;
