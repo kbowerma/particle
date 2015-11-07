@@ -11,7 +11,7 @@
 #define UBIVARSIZE 24
 #define PUSHFREQ 300
 #define FILENAME "6sparktemp"
-#define MYVERSION "0.6.51"
+#define MYVERSION "0.6.63"
 #define GETTEMPFEQ 5
 #define PUSHTOUBIFLAG 1
 
@@ -30,6 +30,8 @@ double freqChecker();
 int getDeviceCount();
 void oDispatch(int tempIndex, float mytemp);
 void oPrintInfo();
+void oPrintInfo5();
+void oPrintNoDevices();
 void oPrintTemp(int index, float mytemp);
 void oPrintTemp2(int index, float mytemp);
 void oPrintTemp3(int index, float mytemp);
@@ -79,10 +81,10 @@ void temperatureJob();
 *      A6   -
 *      A7
 *      D0
-*      D1   Encoder Button
+*      D1
 *      D2   ONEWIRE bus
 *      D3   Relay
-*      D4
+*      D4  Encoder Button
 *      D5
 *      D6   OLED D/C
 *      D7   OLED reset

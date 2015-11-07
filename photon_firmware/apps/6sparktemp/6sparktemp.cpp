@@ -29,7 +29,7 @@ bool debug = true;
   bool gettempflag = true;
   char* ubivar[]={"55e751bc7625423275a3a625", "55e751df7625423276297c4a", "55e752067625423276297c69","55e75229762542328e46adf6"};
   char resultstr[64];
-  int button = D1;
+  int button = D4;
   int buttonvalue = 0;
   int displayMode = 2;
   int deviceCount, lastDeviceCount, lastime, mycounter,thistime, lasttime = 0;
@@ -42,13 +42,14 @@ bool debug = true;
   float temperature = 0.0;
 
  //devices
+ // encolusre address   deviceIndexArray[0]:  28 7E F7 25 03 00 00 77
   DeviceAddress deviceIndexArray[5];  //dynamic Array
   DeviceAddress outsideAddress = { 0x28, 0xe, 0x52, 0x58, 0x6, 0x0, 0x0, 0xe };
   DeviceAddress floorAddress = { 0x28, 0x56, 0xB1, 0x3A, 0x06, 0x00, 0x00, 0x82 };
   DeviceAddress pitAddress = { 0x28, 0x31, 0x26, 0x59, 0x06, 0x00, 0x00, 0x3A };
-  DeviceAddress boardAddress = { 0x28, 0x49, 0x2E, 0xE3, 0x02, 0x00, 0x00, 0x29 };
+  DeviceAddress boardAddress = { 0x28, 0x7E, 0xF7, 0x25, 0x03, 0x00, 0x00, 0x77 };
   DeviceAddress*  deviceAddressArray[4] =  { &outsideAddress, &floorAddress, &pitAddress, &boardAddress } ;
-  String deviceNames[4]= { "outside", "floor", "pit", "board" };
+  String deviceNames[4]= { "out", "flr", "pit", "brd" };
 
   http_header_t headers[] = {
         { "Content-Type", "application/json" },
@@ -102,7 +103,7 @@ void setup()
      //encoder
   pinMode(encoderA, INPUT_PULLUP);
   pinMode(encoderB, INPUT_PULLUP);
-  pinMode(button,INPUT_PULLDOWN);
+  pinMode(button,INPUT_PULLUP);
   pinMode(relay, OUTPUT);
   attachInterrupt(encoderA, doEncoderA, CHANGE);
   attachInterrupt(encoderB, doEncoderB, CHANGE);
@@ -119,18 +120,21 @@ void loop()
 {
   mycounter++;
 
-
   if(lastDeviceCount != deviceCount ) {  //device count changes   this never works
     oled.clear(ALL); // Clear the display's internal memory
     oled.display();  // Display what's in the buffer (splashscreen)
     //delay(1000);     // Delay 1000 ms
     oled.clear(PAGE); // Clear the buffer.
     Serial << " The device Count Changed " << lastDeviceCount << " " <<  deviceCount << endl;
+
   }
   // only do these things every GETTEMPFEQ loops or before I get to the first GETTEMPFREQ
   if (mycounter % GETTEMPFEQ == 0 ||  mycounter < GETTEMPFEQ ) {
     deviceCount = getDeviceCount();
-    temperatureJob();  // do the main temprature job
+    if ( deviceCount > 0 ) {
+      temperatureJob();  // do the main temprature job
+    }
+
     lastDeviceCount = getDeviceCount();  // used to detect
   }
   buttonvalue =  digitalRead(button);
@@ -146,6 +150,9 @@ void loop()
         dispatchEncoder();
   }
 
+  if (encoderPos == 4 )  oPrintInfo();
+  if (encoderPos == 5 )  oPrintInfo5();
+  if (deviceCount == 0 && encoderPos < 4 && encoderPos > 0 ) oPrintNoDevices() ;
 
   lastime = thistime;
   delay(mydelay);
@@ -192,7 +199,7 @@ void dispatchEncoder(){
     if (encoderPos > 5 ) encoderPos = 5;
     if (encoderPos < 0 ) encoderPos = 0;
     setModeFunc(String(encoderPos));
-    temperatureJob();
+    if (deviceCount > 0 ) temperatureJob();
 }
 
 void doEncoderA(){
@@ -250,8 +257,18 @@ void oPrintInfo5() {
     oled.setCursor(0,0);
     oled.print(MYVERSION);
     oled.setCursor(0,10);
-    oled << "MEMORY: " << endl << freemem;
+    oled << "MEMORY: " << endl << freemem << endl;
+    oled << "BUTTON: " << buttonvalue << endl;
     oled.display();
+}
+
+void oPrintNoDevices() {
+  oled.clear(PAGE);
+  oled.setCursor(0,0);
+  oled.setFontType(1);
+  oled << "NO" << endl << "DEVICES" << endl;
+  oled.setFontType(0);
+  oled.display();
 }
 
 void oDispatch(int tempIndex, float temperature) {
@@ -270,12 +287,8 @@ void oDispatch(int tempIndex, float temperature) {
     if (displayMode == 3 ) {
         oPrintTemp3(tempIndex, temperature);
     }
-    if (displayMode == 4 ) {
-    oPrintInfo();
-    }
-    if (displayMode == 5 ) {
-    oPrintInfo5();
-    }
+    if (displayMode == 4 )  oPrintInfo();
+    if (displayMode == 5 )  oPrintInfo5();
 
   Serial << "oled dispatch called " << endl;
 }
