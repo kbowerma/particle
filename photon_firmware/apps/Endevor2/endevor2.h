@@ -10,10 +10,10 @@
 #define TOKEN "hsFRLnMcucOZlfLsQbH9BRbJpveccOc37ksq7eLOtjztxoEpZDA1D2wnWiuP"
 #define UBIVARSIZE 24
 #define PUSHFREQ 300
-#define FILENAME "6sparktemp"
+#define FILENAME "Endevor2"
 #define MYVERSION "0.6.65"
 #define GETTEMPFEQ 5
-#define PUSHTOUBIFLAG 1
+#define PUSHTOUBIFLAG 0
 
 
 
