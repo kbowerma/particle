@@ -40,6 +40,7 @@ bool debug = true;
   int mydelay = 250;
   int relay = D3;
   float temperature = 0.0;
+  int relayHoldDown = 10000;
 
  //devices
  // encolusre address   deviceIndexArray[0]:  28 7E F7 25 03 00 00 77
@@ -63,6 +64,9 @@ bool debug = true;
   volatile bool A_set = false;
   volatile bool B_set = false;
   volatile int encoderPos = 0;
+  Timer relayTimer(relayHoldDown, expireRelay);
+
+
 
 
 
@@ -94,6 +98,7 @@ void setup()
   Particle.function("q", queryDevices);
   Particle.function("setmode", setModeFunc);
   Particle.function("printEEProm", printEEPROMFunc);
+  Particle.function("relay", relayFunc);
 
   //Need to set the device Index Array at startup
   deviceCount = getDeviceCount();
@@ -260,6 +265,7 @@ void oPrintInfo5() {
     oled.setCursor(0,10);
     oled << "MEMORY: " << endl << freemem << endl;
     oled << "BUTTON: " << buttonvalue << endl;
+    oled << "sVer:" << System.version().c_str() << endl;
     oled.display();
 }
 
@@ -418,23 +424,34 @@ int queryDevices(String command) {
       return 1;
     }
 
-    if(command == "relay_on") {
-      digitalWrite(relay, HIGH);
-      return 1;
-    }
 
-    if(command == "relay_off") {
-      digitalWrite(relay, LOW);
+    if(command == "sysver" ) {
+    Serial << "System Version " << System.version().c_str() << endl;
       return 1;
     }
 
     else return -1;
 
+}
+
+int relayFunc(String command) {
+  if(command == "on" ) {
+    digitalWrite(relay, HIGH);
+    //Timer timer(5000, expireRelay);
+    relayTimer.start();
+    return 1;
+  }
+  if(command == "off") {
+    expireRelay();
+    return 0;
+  }
+
+}
 
 
 
-
-
+void expireRelay(){
+  digitalWrite(relay, LOW);
 }
 
 int setModeFunc(String command){ // now used for display mode and to toggle debug

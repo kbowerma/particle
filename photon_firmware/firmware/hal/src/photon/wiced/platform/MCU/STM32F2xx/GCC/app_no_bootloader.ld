@@ -164,6 +164,8 @@ SECTIONS
         link_stack_end = .;
     }> SRAM AT> SRAM
 
+    INCLUDE backup_ram.ld
+
     /DISCARD/ :
     {
         *(.ARM.attributes*)

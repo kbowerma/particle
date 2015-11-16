@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include "device_keys.h"
+#include "service_debug.h"
 
 #ifndef PRODUCT_ID
 #define PRODUCT_ID (0xffff)
@@ -98,7 +99,7 @@ int SparkProtocol::handshake(void)
 {
   memcpy(queue + 40, device_id, 12);
   int err = blocking_receive(queue, 40);
-  if (0 > err) return err;
+  if (0 > err) { ERROR("Handshake: could not receive nonce: %d", err);  return err; }
 
   parse_device_pubkey_from_privkey(queue+52, core_private_key);
 
@@ -108,25 +109,28 @@ int SparkProtocol::handshake(void)
   err = rsa_pkcs1_encrypt(&rsa, RSA_PUBLIC, len, queue, queue + len);
   rsa_free(&rsa);
 
-  if (err) return err;
+  if (err) { ERROR("Handshake: rsa encrypt error %d", err); return err; }
 
   blocking_send(queue + len, 256);
   err = blocking_receive(queue, 384);
-  if (0 > err) return err;
+  if (0 > err) { ERROR("Handshake: Unable to receive key %d", err); return err; }
 
   err = set_key(queue);
-  if (err) return err;
+  if (err) { ERROR("Handshake:  could not set key, %d"); return err; }
 
   queue[0] = 0x00;
   queue[1] = 0x10;
   hello(queue + 2, descriptor.was_ota_upgrade_successful());
 
   err = blocking_send(queue, 18);
-  if (0 > err) return err;
+  if (0 > err) { ERROR("Hanshake: could not send hello message: %d", err); return err; }
 
   if (!event_loop())        // read the hello message from the server
+  {
+      ERROR("Handshake: could not receive hello response");
       return -1;
-
+  }
+  INFO("Hanshake: completed");
   return 0;
 }
 
@@ -660,7 +664,7 @@ void SparkProtocol::remove_event_handlers(const char* event_name)
         int dest = 0;
         for (int i = 0; i < NUM_HANDLERS; i++)
         {
-          if (NULL != event_handlers[i].filter && !strcmp(event_name, event_handlers[i].filter))
+          if (!strcmp(event_name, event_handlers[i].filter))
           {
               memset(&event_handlers[i], 0, sizeof(event_handlers[i]));
           }
@@ -1227,8 +1231,9 @@ SparkProtocol::chunk_index_t SparkProtocol::next_chunk_missing(chunk_index_t sta
 
 void SparkProtocol::set_chunks_received(uint8_t value)
 {
-    int bytes = chunk_bitmap_size();
-    memset(queue+QUEUE_SIZE-bytes, value, bytes);
+    size_t bytes = chunk_bitmap_size();
+    if (bytes)
+    	memset(queue+QUEUE_SIZE-bytes, value, bytes);
 }
 
 bool SparkProtocol::handle_update_done(msg& message)
@@ -1405,14 +1410,22 @@ void SparkProtocol::handle_event(msg& message)
     const int cmp = memcmp(event_handlers[i].filter, event_name, filter_length);
     if (0 == cmp)
     {
-        if(event_handlers[i].handler_data)
+        // don't call the handler directly, use a callback for it.
+        if (!this->descriptor.call_event_handler)
         {
-            EventHandlerWithData handler = (EventHandlerWithData) event_handlers[i].handler;
-            handler(event_handlers[i].handler_data, (char *)event_name, (char *)data);
+            if(event_handlers[i].handler_data)
+            {
+                EventHandlerWithData handler = (EventHandlerWithData) event_handlers[i].handler;
+                handler(event_handlers[i].handler_data, (char *)event_name, (char *)data);
+            }
+            else
+            {
+                event_handlers[i].handler((char *)event_name, (char *)data);
+            }
         }
         else
         {
-            event_handlers[i].handler((char *)event_name, (char *)data);
+            descriptor.call_event_handler(sizeof(FilteringEventHandler), &event_handlers[i], (const char*)event_name, (const char*)data, NULL);
         }
     }
     // else continue the for loop to try the next handler

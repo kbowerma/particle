@@ -53,12 +53,18 @@ uint8_t cloudSocketClosed();
 bool spark_function_internal(const cloud_function_descriptor* desc, void* reserved);
 int call_raw_user_function(void* data, const char* param, void* reserved);
 
+String spark_deviceID();
+
 struct User_Var_Lookup_Table_t
 {
     const void *userVar;
     Spark_Data_TypeDef userVarType;
-    char userVarKey[USER_VAR_KEY_LENGTH];
+    char userVarKey[USER_VAR_KEY_LENGTH+1];
+
+    const void* (*update)(const char* name, Spark_Data_TypeDef varType, const void* var, void* reserved);
 };
+
+
 struct User_Func_Lookup_Table_t
 {
     void* pUserFuncData;
@@ -72,4 +78,14 @@ User_Func_Lookup_Table_t* find_func_by_key_or_add(const char* funcKey);
 
 extern SparkProtocol* sp;
 
+
+/**
+ * regular async update to check that the cloud has been serviced recently.
+ * After 15 seconds of inactivity, the LED status is changed to
+ * @return
+ */
+bool system_cloud_active();
+
+
 #endif	/* SYSTEM_CLOUD_INTERNAL_H */
+

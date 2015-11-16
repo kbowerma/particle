@@ -1,8 +1,78 @@
+## v0.4.7
+
+### FEATURES
+
+ - [Software Timers](https://docs.particle.io/reference/firmware/photon/#software-timers)
+ - [pulseIn(pin, value)](https://docs.particle.io/reference/firmware/photon/#pulsein-) now available for all devices.
+ - [WiFi.dnsServerIP()](https://docs.particle.io/reference/firmware/core/#wifi-dnsserverip-) and [WiFi.dhcpServerIP()](https://docs.particle.io/reference/firmware/core/#wifi-dhcpserverip-)
+ - [serialEvent()](https://docs.particle.io/reference/firmware/core/#serialevent-)
+ - [GCC virtual device](https://github.com/spark/firmware/tree/develop/hal/src/gcc#device-configuration)
+ - [System.version()](https://docs.particle.io/reference/firmware/photon/#system-version-) to retrieve the version of system firmware [#688](https://github.com/spark/firmware/issues/688)
+ - Firmware control of [OTA updates](https://docs.particle.io/reference/firmware/core/#ota-updates) can happen [#375](https://github.com/spark/firmware/issues/375)
+
+### ENHANCEMENTS
+
+ - [multithreading] Application thread continues to run in listening mode
+ - [multithreading] `Particle.process()` called from the application thread pumps application messages [#659](https://github.com/spark/firmware/issues/659)
+ - `Particle.variable()` supports `String`s [#657](https://github.com/spark/firmware/issues/657)
+ - Simplified [Particle.variable()](https://docs.particle.io/reference/firmware/photon/#variables) API - variable type parameter is optional, and variables are passed by reference so  `&`'s are not required.
+ - I2C will generate STOP and SW Reset immediately if Slave Acknowledge failure is detected (must use pull-up resistors), instead of taking 100ms. [commit](https://github.com/spark/firmware/commit/893aa523990752a2afcda4ffa5bba3f66e047014)
+
+### BUGFIXES
+
+ - TCPClient unstable [#672](https://github.com/spark/firmware/issues/672)
+ - Photon frequently SOS's immediately following cloud re-connect [#663](https://github.com/spark/firmware/issues/663)
+ - `String.toLower()` has no affect on string. [#665](https://github.com/spark/firmware/issues/665)
+ - SOS due to WICED socket handlers being called when socket is disposed. [#663](https://github.com/spark/firmware/issues/663) [#672](https://github.com/spark/firmware/issues/672)
+ - Application constructors executed after RTOS startup so that HAL_Delay_Milliseconds() can be called. This may mean that `STARTUP()` code executes just a little later than before, but
+    can safely use all public APIs.
+ - Ensure bootloader region is write protected.
+ - White breathing LED on exiting listening mode. [#682](https://github.com/spark/firmware/issues/682)
+ - WICED not resolving DNS names with 4 parts (it was trying to decode as an IP address.)
+ - SoftAP via HTTP would fail on Safari due to request sent as multiple TCP packets. Fixed WICED HTTP server.  [#680](https://github.com/spark/firmware/issues/680)
+ - Retained variables are not persisting, even without reset or deep sleep. [#661](https://github.com/spark/firmware/issues/661)
+ - Backup RAM enabled for monolithic builds [#667](https://github.com/spark/firmware/issues/667)
+ - Pure virtual call on creation of low priority std::thread [#652](https://github.com/spark/firmware/issues/652)
+
+
+## v0.4.6
+
+### FEATURES
+ - [photon] separate [System Thread](https://docs.particle.io/reference/firmware/photon/#system-thread)
+ - [core] Hooks to support FreeRTOS (optional library)
+ - Variables stored in [Backup RAM](https://docs.particle.io/reference/firmware/photon/#backup-ram)
+ - [printf/printlnf](https://docs.particle.io/reference/firmware/core/#printf-) on `Print` classes - `Serial`, `Serial1`, `TCP`, `UDP`
+ - `String.format` for printf-style formatting of to as `String`.
+ - [Wire.end()](https://docs.particle.io/reference/firmware/photon/#end-) to release the I2C pins. [#597](https://github.com/spark/firmware/issues/597)
+ - [Wire.reset()](https://docs.particle.io/reference/firmware/photon/#reset-) to reset the I2C bus. Thanks @pomplesiegel [#598](https://github.com/spark/firmware/issues/598)
+ - [System.ticks()](https://docs.particle.io/reference/firmware/core/#system-cycle-counter) to retrieve the current MCU cycle counter for precise timing.
+ - [System.enterSafeMode()](https://docs.particle.io/reference/firmware/core/#system-entersafemode-) to restart the device in safe mode.
+
+### ENHANCEMENTS
+
+ - [photon] `WiFi.selectAntenna()` setting is persistent, so the last selected antenna is used when the
+device is in safe mode. [#618]
+ - Detect when the cloud hasn't been serviced for 15s and disconnect, so device LED state accurately
+reflects the connection state when the application loop has stalled. [#626](https://github.com/spark/firmwarwe/issues/626)
+ - Compile-time checks for `Particle.variable()` [#619](https://github.com/spark/firmwarwe/issues/619)
+- [photon] Increased retry count when connecting to WiFi. [#620](https://github.com/spark/firmware/issues/620)
+- Setup button events [#611](https://github.com/spark/firmware/pull/611)
+
+### BUGFIXES
+
+ - `UDP.receivePacket()` would fail if `UDP.setBuffer()` hadn't been called first. Thanks @r2jitu.
+ - [photon] Default SS pin for SPI1 now set to D5. [#623](https://github.com/spark/firmware/issues/623)
+ - [photon] Long delay entering listening mode. [#566](https://github.com/spark/firmware/issues/566)
+ - [photon] Solid green LED when WiFi network cannot be connected to due to invalid key. (The LED now blinks.)
+ - [photon] Storing more than 2 Wi-Fi credentials would sometimes give unpredictable results.
+ - [photon] TX/RX pins did not work after entering listening mode. [#632](https://github.com/spark/firmware/issues/632)
+ - [photon] Improvements to I2C for MCP23017 / Adafruit RGBLCDShield. [#626](https://github.com/spark/firmware/pull/626)
+
 
 ## v0.4.5
 
 ### FEATURES
- - `SPI.setClockDividerReference`, `SPI.setClockSpeed` to set clock speed in a more portable manner. [#454]https://github.com/spark/firmware/issues/454
+- `SPI.setClockDividerReference`, `SPI.setClockSpeed` to set clock speed in a more portable manner. [#454](https://github.com/spark/firmware/issues/454)
 - `WiFi.scan` function to retrieve details of local access points. [#567](https://github.com/spark/firmware/pull/567)
 - `UDP.sendPacket`/`UDP.receivePacket` to send/receive a packet directly to an application-supplied buffer. [#452](https://github.com/spark/firmware/pull/452)
 - Static IP Support [photon] - [#451](https://github.com/spark/firmware/pull/451)

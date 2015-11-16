@@ -1,5 +1,24 @@
+/**
+ ******************************************************************************
+  Copyright (c) 2013-2015 Particle Industries, Inc.  All rights reserved.
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation, either
+  version 3 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, see <http://www.gnu.org/licenses/>.
+ ******************************************************************************
+ */
 
 #include "system_event.h"
+#include "system_threading.h"
 #include <stdint.h>
 #include <vector>
 
@@ -68,12 +87,17 @@ void system_unsubscribe_event(system_event_t events, system_event_handler_t* han
  * @param data
  * @param pointer
  */
-void system_notify_event(system_event_t event, uint32_t data, void* pointer)
+void system_notify_event(system_event_t event, uint32_t data, void* pointer, void (*fn)())
 {
+    APPLICATION_THREAD_CONTEXT_ASYNC(system_notify_event(event, data, pointer, fn));
+    // run event notifications on the application thread
+
     for (const SystemEventSubscription& subscription : subscriptions)
     {
         subscription.notify(event, data, pointer);
     }
+    if (fn)
+        fn();
 }
 
 

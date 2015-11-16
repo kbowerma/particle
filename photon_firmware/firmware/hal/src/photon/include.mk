@@ -14,13 +14,9 @@ HAL_WICED_RTOS=FreeRTOS
 HAL_WICED_NETWORK=LwIP
 
 
-# if we are being compiled with platform as a dependency, then also include
-# implementation headers.
-ifneq (,$(findstring platform,$(DEPENDENCIES)))
 INCLUDE_DIRS += $(HAL_SRC_COREV2_PATH)
 INCLUDE_DIRS += $(HAL_INCL_STM32F2XX_PATH)
 INCLUDE_DIRS += $(HAL_INCL_STM32_PATH)
-endif
 
 # implementation defined details for the platform that can vary
 INCLUDE_DIRS += $(HAL_SRC_COREV2_PATH)/api
@@ -51,6 +47,7 @@ LINKER_DEPS=$(LINKER_FILE) $(HAL_WICED_LIB_FILES)
 LDFLAGS += --specs=nano.specs -lc -lnosys
 LDFLAGS += -Wl,--whole-archive $(HAL_WICED_LIB_FILES) -Wl,--no-whole-archive
 LDFLAGS += -T$(LINKER_FILE)
+LDFLAGS += -L$(COMMON_BUILD)/arm/linker/stm32f2xx
 LDFLAGS += -L$(WICED_MCU)/STM32F2x5
 LDFLAGS += -Wl,--defsym,__STACKSIZE__=1400
 USE_PRINTF_FLOAT ?= n
@@ -58,7 +55,9 @@ ifeq ("$(USE_PRINTF_FLOAT)","y")
 LDFLAGS += -u _printf_float
 endif
 LDFLAGS += -Wl,-Map,$(TARGET_BASE).map
+LDFLAGS += -u uxTopUsedPriority
 
+LDFLAGS += -u uxTopUsedPriority
 endif
 
 # not using assembler startup script, but will use startup linked in with wiced

@@ -40,5 +40,6 @@ MEMORY
     DCT2_FLASH (rx) : ORIGIN = 0x08008000, LENGTH = 16K
     APP_FLASH (rx)  : ORIGIN = 0x08020000, LENGTH = 1024K-0x20000
     SRAM      (rwx) : ORIGIN = 0x20000000, LENGTH = 128K
+    INCLUDE backup_ram_memory.ld
 }
 

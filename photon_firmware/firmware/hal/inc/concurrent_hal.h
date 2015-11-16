@@ -24,11 +24,10 @@
 #ifndef CONCURRENCY_HAL_H
 #define	CONCURRENCY_HAL_H
 
-#if PLATFORM_THREADING
-
+#include "system_tick_hal.h"
 #include <stdint.h>
 #include <stddef.h>
-
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -43,8 +42,6 @@ extern "C" {
  */
 #include "concurrent_hal_impl.h"
 
-
-typedef void* os_thread_t;
 
 const os_thread_t OS_THREAD_INVALID_HANDLE = NULL;
 
@@ -117,11 +114,98 @@ os_result_t os_thread_join(os_thread_t thread);
  */
 os_result_t os_thread_cleanup(os_thread_t thread);
 
+/**
+ * Signifies that the calling thread wishes to give up control to some other thread.
+ * @param thread
+ * @return
+ */
+os_result_t os_thread_yield(void);
+
+
+/**
+ * Delays the current task until a specified time to set up periodic tasks
+ * @param previousWakeTime The time the thread last woke up.  May not be NULL.
+ *                         Set to the current time on first call. Will be updated
+ *                         when the task wakes up
+ * @param timeIncrement    The cycle time period
+ * @return 0 on success. 1 if previousWakeTime is NULL
+ */
+os_result_t os_thread_delay_until(system_tick_t *previousWakeTime, system_tick_t timeIncrement);
+
+int os_condition_variable_create(condition_variable_t* var);
+void os_condition_variable_destroy(condition_variable_t var);
+
+// something spooky going on here...adding #include <mutex> to the top of this file
+// causes 'mutex' is not a member of 'std'. and errors in other classes using mutext also occur
+// the workaround is to use a void* then cast to a mutex in the implementation. <<shrug>>
+
+void os_condition_variable_wait(condition_variable_t var, void* lock);
+void os_condition_variable_notify_one(condition_variable_t var);
+void os_condition_variable_notify_all(condition_variable_t var);
+
+const system_tick_t CONCURRENT_WAIT_FOREVER = (system_tick_t)-1;
+
+int os_queue_create(os_queue_t* queue, size_t item_size, size_t item_count);
+/**
+ * Return 0 on success.
+ * @param queue
+ * @param item
+ * @param delay
+ * @return
+ */
+int os_queue_put(os_queue_t queue, const void* item, system_tick_t delay);
+
+/**
+ * Return 0 on success.
+ * @param queue
+ * @param item
+ * @param delay
+ * @return
+ */
+int os_queue_take(os_queue_t queue, void* item, system_tick_t delay);
+void os_queue_destroy(os_queue_t queue);
+
+int os_mutex_create(os_mutex_t* mutex);
+int os_mutex_destroy(os_mutex_t mutex);
+int os_mutex_lock(os_mutex_t mutex);
+int os_mutex_trylock(os_mutex_t mutex);
+int os_mutex_unlock(os_mutex_t mutex);
+
+int os_mutex_recursive_create(os_mutex_recursive_t* mutex);
+int os_mutex_recursive_destroy(os_mutex_recursive_t mutex);
+int os_mutex_recursive_lock(os_mutex_recursive_t mutex);
+int os_mutex_recursive_trylock(os_mutex_recursive_t mutex);
+int os_mutex_recursive_unlock(os_mutex_recursive_t mutex);
+
+// Binary semaphores
+int os_semaphore_create(os_semaphore_t* semaphore, unsigned max_count, unsigned initial_count);
+int os_semaphore_destroy(os_semaphore_t semaphore);
+int os_semaphore_take(os_semaphore_t semaphore, system_tick_t timeout, bool reserved);
+int os_semaphore_give(os_semaphore_t semaphore, bool reserved);
+
+#define _GLIBCXX_HAS_GTHREADS
+#include <bits/gthr.h>
 
 /**
  * Enables/disables pre-emptive context switching
  */
 void os_thread_scheduling(bool enabled, void* reserved);
+
+/**
+ * Create a new timer. Returns 0 on success.
+ */
+int os_timer_create(os_timer_t* timer, unsigned period, void (*callback)(os_timer_t timer), void* timer_id, void* reserved);
+int os_timer_get_id(os_timer_t timer, void** timer_id);
+
+typedef enum os_timer_change_t
+{
+    OS_TIMER_CHANGE_START,
+    OS_TIMER_CHANGE_RESET,
+    OS_TIMER_CHANGE_STOP
+} os_timer_change_t;
+
+int os_timer_change(os_timer_t timer, os_timer_change_t change, bool fromISR, unsigned period, unsigned block, void* reserved);
+int os_timer_destroy(os_timer_t timer, void* reserved);
 
 
 #ifdef __cplusplus
@@ -129,7 +213,4 @@ void os_thread_scheduling(bool enabled, void* reserved);
 #endif
 
 
-#endif
-
 #endif	/* CONCURRENCY_HAL_H */
-

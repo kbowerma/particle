@@ -19,52 +19,77 @@
 #pragma once
 
 #include "static_assert.h"
+#include "spark_wiring_string.h"
 #include <string.h>
 #include <time.h>
+#include <stdint.h>
 
-typedef struct SparkProtocol SparkProtocol;
+typedef class SparkProtocol SparkProtocol;
+
+
+typedef enum
+{
+	CLOUD_VAR_BOOLEAN = 1, CLOUD_VAR_INT = 2, CLOUD_VAR_STRING = 4, CLOUD_VAR_DOUBLE = 9
+} Spark_Data_TypeDef;
+
+struct CloudVariableTypeBase {};
+struct CloudVariableTypeBool : public CloudVariableTypeBase {
+    using vartype = bool;
+    using varref = const bool*;
+    CloudVariableTypeBool(){};
+    static inline Spark_Data_TypeDef value() { return CLOUD_VAR_BOOLEAN; }
+};
+struct CloudVariableTypeInt : public CloudVariableTypeBase {
+    using vartype = int;
+    using varref = const int*;
+    CloudVariableTypeInt(){};
+    static inline Spark_Data_TypeDef value() { return CLOUD_VAR_INT; }
+};
+struct CloudVariableTypeString : public CloudVariableTypeBase {
+    using vartype = const char*;
+    using varref = const char*;
+    CloudVariableTypeString(){};
+    static inline Spark_Data_TypeDef value() { return CLOUD_VAR_STRING; }
+};
+struct CloudVariableTypeDouble : public CloudVariableTypeBase {
+    using vartype = double;
+    using varref = const double*;
+
+    CloudVariableTypeDouble(){};
+    static inline Spark_Data_TypeDef value() { return CLOUD_VAR_DOUBLE; }
+};
+
+const CloudVariableTypeBool BOOLEAN;
+const CloudVariableTypeInt INT;
+const CloudVariableTypeString STRING;
+const CloudVariableTypeDouble DOUBLE;
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+String spark_deviceID(void);
 
 void cloud_disconnect(bool closeSocket=true);
 
-/**
- * Functions for managing the cloud connection, performing cloud operations
- * and system upgrades.
- */
 
-int Internet_Test(void);
+class String;
 
-int Spark_Connect(void);
-int Spark_Disconnect(void);
 
-void Spark_Protocol_Init(void);
-int Spark_Handshake(void);
-bool Spark_Communication_Loop(void);
-void Multicast_Presence_Announcement(void);
-void Spark_Signal(bool on, unsigned, void*);
-void Spark_SetTime(unsigned long dateTime);
-void Spark_Process_Events();
+#if defined(PLATFORM_ID)
 
-extern volatile uint8_t LED_Spark_Signal;
-void LED_Signaling_Override(void);
+#if PLATFORM_ID!=3
+STATIC_ASSERT(spark_data_typedef_is_1_byte, sizeof(Spark_Data_TypeDef)==1);
+#endif
 
-void system_set_time(time_t time, unsigned param, void* reserved);
+#endif
 
-typedef enum
-{
-	BOOLEAN = 1, INT = 2, STRING = 4, DOUBLE = 9
-} Spark_Data_TypeDef;
 
 typedef enum
 {
 	PUBLIC = 0, PRIVATE = 1
 } Spark_Event_TypeDef;
-
-typedef struct String String;
 
 typedef void (*EventHandler)(const char* name, const char* data);
 
@@ -94,7 +119,13 @@ struct  cloud_function_descriptor {
 
 STATIC_ASSERT(cloud_function_descriptor_size, sizeof(cloud_function_descriptor)==16 || sizeof(void*)!=4);
 
-bool spark_variable(const char *varKey, const void *userVar, Spark_Data_TypeDef userVarType, void* reserved);
+typedef struct spark_variable_t
+{
+    uint16_t size;
+    const void* (*update)(const char* nane, Spark_Data_TypeDef type, const void* var, void* reserved);
+} spark_variable_t;
+
+bool spark_variable(const char *varKey, const void *userVar, Spark_Data_TypeDef userVarType, spark_variable_t* extra);
 
 /**
  * @param funcKey   The name of the function to register. When NULL, pFunc is taken to be a
@@ -114,9 +145,6 @@ void spark_disconnect(void);    // should be set connected since it manages the 
 bool spark_connected(void);
 SparkProtocol* system_cloud_protocol_instance(void);
 
-char* bytes2hexbuf(const uint8_t* buf, unsigned len, char* output);
-String bytes2hex(const uint8_t* buf, unsigned len);
-String spark_deviceID(void);
 
 #define SPARK_BUF_LEN			        600
 

@@ -1,3 +1,21 @@
+/**
+ ******************************************************************************
+  Copyright (c) 2013-2015 Particle Industries, Inc.  All rights reserved.
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation, either
+  version 3 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, see <http://www.gnu.org/licenses/>.
+ ******************************************************************************
+ */
 
 #include <stddef.h>
 #include "spark_wiring_system.h"
@@ -9,17 +27,18 @@
 #include "delay_hal.h"
 #include "system_event.h"
 #include "system_update.h"
-#include "system_cloud.h"
-#include "rgbled.h"
-#include "module_info.h"
+#include "system_cloud_internal.h"
 #include "system_network.h"
 #include "system_ymodem.h"
 #include "system_task.h"
+#include "rgbled.h"
+#include "module_info.h"
 #include "spark_protocol_functions.h"
 #include "string_convert.h"
 #include "appender.h"
 #include "system_version.h"
 #include "spark_macros.h"
+#include "system_network_internal.h"
 
 #ifdef START_DFU_FLASHER_SERIAL_SPEED
 static uint32_t start_dfu_flasher_serial_speed = START_DFU_FLASHER_SERIAL_SPEED;
@@ -35,6 +54,44 @@ volatile uint8_t SPARK_CLOUD_SOCKETED;
 volatile uint8_t SPARK_CLOUD_CONNECTED;
 volatile uint8_t SPARK_FLASH_UPDATE;
 volatile uint32_t TimingFlashUpdateTimeout;
+
+static_assert(SYSTEM_FLAG_OTA_UPDATE_PENDING==0, "system flag value");
+static_assert(SYSTEM_FLAG_OTA_UPDATE_ENABLED==1, "system flag value");
+static_assert(SYSTEM_FLAG_RESET_PENDING==2, "system flag value");
+static_assert(SYSTEM_FLAG_RESET_ENABLED==3, "system flag value");
+static_assert(SYSTEM_FLAG_MAX==4, "system flag max value");
+
+volatile uint8_t systemFlags[SYSTEM_FLAG_MAX] = {
+    0, 1,   // OTA updates pending/enabled
+    0, 1,   // Reset pending/enabled
+};
+
+void system_flag_changed(system_flag_t flag, uint8_t oldValue, uint8_t newValue)
+{
+}
+
+int system_set_flag(system_flag_t flag, uint8_t value, void*)
+{
+    if (flag>=SYSTEM_FLAG_MAX)
+        return -1;
+    if (systemFlags[flag]!=value) {
+        uint8_t oldValue = systemFlags[flag];
+        systemFlags[flag] = value;
+        system_flag_changed(flag, oldValue, value);
+    }
+    return 0;
+}
+
+
+int system_get_flag(system_flag_t flag, uint8_t* value, void*)
+{
+    if (flag>=SYSTEM_FLAG_MAX)
+        return -1;
+    if (value)
+        *value = systemFlags[flag];
+    return 0;
+}
+
 
 void set_ymodem_serial_flash_update_handler(ymodem_serial_flash_update_handler handler)
 {
@@ -116,6 +173,12 @@ void system_lineCodingBitRateHandler(uint32_t bitrate)
 #endif
 }
 
+uint32_t timeRemaining(uint32_t start, uint32_t duration)
+{
+    uint32_t elapsed = HAL_Timer_Milliseconds()-start;
+    return (elapsed>=duration) ? 0 : duration-elapsed;
+}
+
 int Spark_Prepare_For_Firmware_Update(FileTransfer::Descriptor& file, uint32_t flags, void* reserved)
 {
     if (file.store==FileTransfer::Store::FIRMWARE)
@@ -134,17 +197,59 @@ int Spark_Prepare_For_Firmware_Update(FileTransfer::Descriptor& file, uint32_t f
         // only check address
     }
     else {
-        RGB.control(true);
-        RGB.color(RGB_COLOR_MAGENTA);
-        SPARK_FLASH_UPDATE = 1;
-        TimingFlashUpdateTimeout = 0;
-        system_notify_event(firmware_update, firmware_update_begin, &file);
-        HAL_FLASH_Begin(file.file_address, file.file_length, NULL);
+        uint32_t start = HAL_Timer_Milliseconds();
+        system_set_flag(SYSTEM_FLAG_OTA_UPDATE_PENDING, 1, nullptr);
+        system_notify_event(firmware_update_pending);
+        if (waitFor(System.updatesEnabled, timeRemaining(start, 30000)))
+        {
+            system_set_flag(SYSTEM_FLAG_OTA_UPDATE_PENDING, 0, nullptr);
+            RGB.control(true);
+            RGB.color(RGB_COLOR_MAGENTA);
+            SPARK_FLASH_UPDATE = 1;
+            TimingFlashUpdateTimeout = 0;
+            system_notify_event(firmware_update, firmware_update_begin, &file);
+            HAL_FLASH_Begin(file.file_address, file.file_length, NULL);
+        }
+        else
+            result = 1;     // updates disabled
     }
     return result;
 }
 
 void serial_dump(const char* msg, ...);
+
+
+void system_pending_shutdown()
+{
+    uint8_t was_set = false;
+    system_get_flag(SYSTEM_FLAG_RESET_PENDING, &was_set, nullptr);
+    if (!was_set) {
+        system_set_flag(SYSTEM_FLAG_RESET_PENDING, 1, nullptr);
+        system_notify_event(reset_pending);
+    }
+}
+
+void system_shutdown_if_enabled()
+{
+    // shutdown if user initiated poweroff or system reset is allowed
+    if (System.resetPending() && System.resetEnabled())
+    {
+        if (SYSTEM_POWEROFF) {              // shutdown network module too.
+            system_sleep(SLEEP_MODE_SOFTPOWEROFF, 0, 0, NULL);
+        }
+        else {
+            System.reset();
+        }
+    }
+}
+
+void system_shutdown_if_needed()
+{
+    if (System.resetPending() && System.resetEnabled())
+    {
+        system_notify_event(reset, 0, nullptr, system_shutdown_if_enabled);
+    }
+}
 
 int Spark_Finish_Firmware_Update(FileTransfer::Descriptor& file, uint32_t flags, void* reserved)
 {
@@ -157,12 +262,13 @@ int Spark_Finish_Firmware_Update(FileTransfer::Descriptor& file, uint32_t flags,
         if (file.store==FileTransfer::Store::FIRMWARE)
         {
             hal_update_complete_t result = HAL_FLASH_End(NULL);
-
             system_notify_event(firmware_update, result!=HAL_UPDATE_ERROR ? firmware_update_complete : firmware_update_failed, &file);
 
-            // todo - talk with application and see if now is a good time to reset
-            // if update not applied, do we need to reset?
-            HAL_Core_System_Reset();
+
+            if (result==HAL_UPDATE_APPLIED_PENDING_RESTART)
+            {
+                system_pending_shutdown();
+            }
         }
     }
     else
@@ -239,6 +345,20 @@ public:
     }
 
     bool next() { return write(',') && newline(); }
+
+    bool write_key_values(size_t count, const key_value* key_values)
+    {
+        bool result = true;
+        while (count-->0) {
+            result = result && write_key_value(key_values++);
+        }
+        return result;
+    }
+
+    bool write_key_value(const key_value* kv)
+    {
+        return write_string(kv->key, kv->value);
+    }
 };
 
 const char* module_function_string(module_function_t func) {
@@ -273,6 +393,7 @@ bool system_info_to_json(appender_fn append, void* append_data, hal_system_info_
     AppendJson json(append, append_data);
     bool result = true;
     result &= json.write_value("p", system.platform_id)
+        && json.write_key_values(system.key_value_count, system.key_values)
         && json.write_attribute("m")
         && json.write('[');
     char buf[65];
@@ -314,13 +435,15 @@ bool system_info_to_json(appender_fn append, void* append_data, hal_system_info_
 bool system_module_info(appender_fn append, void* append_data, void* reserved)
 {
     hal_system_info_t info;
+    memset(&info, 0, sizeof(info));
+    info.size = sizeof(info);
     HAL_System_Info(&info, true, NULL);
     bool result = system_info_to_json(append, append_data, info);
     HAL_System_Info(&info, false, NULL);
     return result;
 }
 
-bool system_version_info(Appender* appender)
+bool append_system_version_info(Appender* appender)
 {
     bool result = appender->append("system firmware version: " stringify(SYSTEM_VERSION_STRING)
 #if  defined(SYSTEM_MINIMAL)

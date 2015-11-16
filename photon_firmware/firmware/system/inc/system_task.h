@@ -36,7 +36,7 @@ extern "C" {
 #endif
 
 uint32_t HAL_WLAN_SetNetWatchDog(uint32_t timeOutInuS);
-void SPARK_WLAN_Setup(void (*presence_announcement_callback)(void));
+void Network_Setup(bool threaded);
 
 /**
  * Run background processing. This function should be called as often as possible by user code.
@@ -50,8 +50,6 @@ inline void Spark_Idle() { Spark_Idle_Events(false); }
  */
 void SPARK_WLAN_Loop(void) __attribute__ ((deprecated("Please use Particle.process() instead.")));
 inline void SPARK_WLAN_Loop(void) { spark_process(); }
-
-void SPARK_WLAN_SmartConfigProcess();
 
 void disconnect_cloud();
 
@@ -68,6 +66,7 @@ extern volatile uint8_t SPARK_LED_FADE;
 
 extern volatile uint8_t Spark_Error_Count;
 extern volatile uint8_t Cloud_Handshake_Error_Count;
+extern volatile uint8_t SYSTEM_POWEROFF;
 
 extern volatile system_tick_t spark_loop_total_millis;
 
@@ -77,6 +76,12 @@ void system_delay_ms(unsigned long ms, bool no_background_loop);
  * Determines the backoff period after a number of failed connections.
  */
 unsigned backoff_period(unsigned connection_attempts);
+
+/**
+ * This is for internal testing. Do not call this function since it is not
+ * guaranteed to be preserved or backwards compatible between releases.
+ */
+void* system_internal(int item, void* reserved);
 
 
 #ifdef __cplusplus

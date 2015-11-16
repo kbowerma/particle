@@ -11,7 +11,7 @@
 #define UBIVARSIZE 24
 #define PUSHFREQ 300
 #define FILENAME "Endevor2"
-#define MYVERSION "0.6.65"
+#define MYVERSION "0.7.00"
 #define GETTEMPFEQ 5
 #define PUSHTOUBIFLAG 0
 
@@ -26,6 +26,7 @@ void debugSerial(int i );
 void dispatchEncoder();
 void doEncoderA();
 void doEncoderB();
+void expireRelay();
 double freqChecker();
 int getDeviceCount();
 void oDispatch(int tempIndex, float mytemp);
@@ -40,6 +41,7 @@ int printEEPROMFunc(String command);
 int queryDevices(String command);
 int regDevice(String command);
 int regDeviceFunc(String command);
+int relayFunc(String command);
 int setModeFunc(String command);
 int setmode(String command);
 void temperatureJob();

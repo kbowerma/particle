@@ -39,8 +39,10 @@
 #define CCASSERT(predicate) _x_CCASSERT_LINE(predicate, __LINE__)
 #define _x_CCASSERT_LINE(predicate, line) typedef char CAT(constraint_violated_on_line_,line)[2*((predicate)!=0)-1];
 
+#ifndef stringify
 #define stringify(x) __stringify(x)
 #define __stringify(x) #x
+#endif
 
 // Seconds to Us
 #define S2u(s) ((s)*1000000)
@@ -50,6 +52,6 @@
 // Seconds to Ms
 #define S2M(s) ((s)*1000)
 
-#define BYTE_N(x,n)			        (((x) >> ((n)*8) & 0x000000FF)
+#define BYTE_N(x,n)			        ((x) >> ((n)*8) & 0x000000FF)
 
 #endif /* SPARK_MACROS_H_ */
