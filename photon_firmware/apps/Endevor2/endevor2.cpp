@@ -27,7 +27,7 @@ MicroOLED oled;
 //Globals
 bool debug = true;
   bool gettempflag = true;
-  char* ubivar[]={"55e751bc7625423275a3a625", "55e751df7625423276297c4a", "55e752067625423276297c69","55e75229762542328e46adf6"};
+  char* ubivar[]={"564a6d137625425cf86b4ce4", "xxx", "xxx","xxx"};
   char resultstr[64];
   int button = D4;
   int buttonvalue = 0;
