@@ -11,9 +11,9 @@
 #define UBIVARSIZE 24
 #define PUSHFREQ 300
 #define FILENAME "Endevor2"
-#define MYVERSION "0.7.00"
+#define MYVERSION "0.7.01"
 #define GETTEMPFEQ 5
-#define PUSHTOUBIFLAG 0
+#define PUSHTOUBIFLAG 1
 
 
 

@@ -40,7 +40,7 @@ bool debug = true;
   int mydelay = 250;
   int relay = D3;
   float temperature = 0.0;
-  int relayHoldDown = 10000;
+  int relayHoldDown = 30000;
 
  //devices
  // encolusre address   deviceIndexArray[0]:  28 7E F7 25 03 00 00 77
@@ -479,7 +479,7 @@ void temperatureJob() {
         Serial << "gotTemp() = "  << i << " " << gotTemp << endl;
         request.body = formatTempToBody(gotTemp, i);
       //  if (mycounter % PUSHFREQ == 0  && PUSHTOUBIFLAG == 1 ) {
-       if (mycounter % PUSHFREQ == 0  ) {
+       if (mycounter % PUSHFREQ == 0  && PUSHTOUBIFLAG == 1 ) {
             String mypath = String("/api/v1.6/variables/");
             mypath.concat(ubivar[i]);
             mypath.concat("/values");

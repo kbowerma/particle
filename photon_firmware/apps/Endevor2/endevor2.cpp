@@ -40,12 +40,12 @@ bool debug = true;
   int mydelay = 250;
   int relay = D3;
   float temperature = 0.0;
-  int relayHoldDown = 10000;
+  int relayHoldDown = 30000;
 
  //devices
- // encolusre address   deviceIndexArray[0]:  28 7E F7 25 03 00 00 77
+  // encolusre address   deviceIndexArray[0]:  28 7E F7 25 03 00 00 77
   DeviceAddress deviceIndexArray[5];  //dynamic Array
-//  DeviceAddress outsideAddress = { 0x28, 0xe, 0x52, 0x58, 0x6, 0x0, 0x0, 0xe };
+ //  DeviceAddress outsideAddress = { 0x28, 0xe, 0x52, 0x58, 0x6, 0x0, 0x0, 0xe };
   //DeviceAddress floorAddress = { 0x28, 0x56, 0xB1, 0x3A, 0x06, 0x00, 0x00, 0x82 };
   //DeviceAddress pitAddress = { 0x28, 0x31, 0x26, 0x59, 0x06, 0x00, 0x00, 0x3A };
   DeviceAddress boardAddress = { 0x28, 0x49, 0x2E, 0xE3, 0x02, 0x00, 0x00, 0x29 };
@@ -65,9 +65,6 @@ bool debug = true;
   volatile bool B_set = false;
   volatile int encoderPos = 0;
   Timer relayTimer(relayHoldDown, expireRelay);
-
-
-
 
 
 void setup()
@@ -124,12 +121,20 @@ void setup()
 
 void loop()
 {
+
+  //  New block to identify device count changes
+  lastDeviceCount = deviceCount;
+  deviceCount = getDeviceCount();
+  //end New block
   mycounter++;
 
   if(lastDeviceCount != deviceCount ) {  //device count changes   this never works
     oled.clear(ALL); // Clear the display's internal memory
     oled.display();  // Display what's in the buffer (splashscreen)
-    //delay(1000);     // Delay 1000 ms
+    oled.setCursor(0,0);
+    //oled << "Count " << endl << "changed " << endl <<  lastDeviceCount << " " << deviceCount << endl;
+    oled.display();
+    delay(5000);     // Delay 1000 ms
     oled.clear(PAGE); // Clear the buffer.
     Serial << " The device Count Changed " << lastDeviceCount << " " <<  deviceCount << endl;
 
@@ -140,8 +145,8 @@ void loop()
     if ( deviceCount > 0 ) {
       temperatureJob();  // do the main temprature job
     }
-
-    lastDeviceCount = getDeviceCount();  // used to detect
+    //  I think this is wrong
+    //lastDeviceCount = getDeviceCount();  // used to detect
   }
   buttonvalue =  digitalRead(button);
   if( debug ) {
@@ -448,8 +453,6 @@ int relayFunc(String command) {
 
 }
 
-
-
 void expireRelay(){
   digitalWrite(relay, LOW);
 }
@@ -479,7 +482,7 @@ void temperatureJob() {
         Serial << "gotTemp() = "  << i << " " << gotTemp << endl;
         request.body = formatTempToBody(gotTemp, i);
       //  if (mycounter % PUSHFREQ == 0  && PUSHTOUBIFLAG == 1 ) {
-       if (mycounter % PUSHFREQ == 0  ) {
+       if (mycounter % PUSHFREQ == 0  && PUSHTOUBIFLAG == 1) {
             String mypath = String("/api/v1.6/variables/");
             mypath.concat(ubivar[i]);
             mypath.concat("/values");
