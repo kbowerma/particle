@@ -7,6 +7,7 @@
 *   1.  uses hardcoded address in array instead of calling by index.
 *   2.  fix getting, prinint and pushing temp values when they are disconnected (-196)
 *   3.  fix ubidots to always go to the right source
+*    test
 */
 
 #include "application.h"

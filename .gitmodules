@@ -1,0 +1,6 @@
+[submodule "photon_firmware/apps/holiday_road"]
+	path = photon_firmware/apps/holiday_road
+	url = git@github.com:kbowerma/holiday_road.git
+[submodule "photon_firmware/apps/banjo_monkey"]
+	path = photon_firmware/apps/banjo_monkey
+	url = git@github.com:kbowerma/banjo_monkey.git
