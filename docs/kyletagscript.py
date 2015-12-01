@@ -137,7 +137,7 @@ def writeImages(i,value,row):
 
 #open file with read access
 #myfile = raw_input("Enter file name minus .csv extension ()ex. ESP8266/Thing): ")
-myfile = "particle"
+myfile = "photon"
 if os.access(myfile +".csv", os.R_OK):
   file = open(myfile +".csv","r")
   print "File opened"
