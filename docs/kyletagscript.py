@@ -22,9 +22,9 @@ import time
 
 row=0 #row starts at the top
 height=12 #height of a box
-width=54 #width of a box
+width=41 #width of a box
 rowheight=15 #height of a row (leaving enough space between rows to move)
-rowwidth=56 #width of a 'spot', basically width plus a few
+rowwidth=44 #width of a 'spot', basically width plus a few
 fields=13 # number of fields
 documentWidth = rowwidth*fields +50 #maximum width the document should be
 documentHeight = 2250 #this is  guess since we need to make the document before we know the file size, doesn't really matter anyway
@@ -34,7 +34,7 @@ previoustext = 0 #for text function, defines how much text we have already writt
 textheight=17 #how much we add each time we add a line of text
 textstart=100 #where a block of text will start (y axis), this will be set in the code
 myfile="ProMini" #file read in to be parsed
-fontsize=12
+fontsize=10
 imagewidth=250
 imageheight=250
 indent = 1
@@ -55,67 +55,67 @@ def writeField(type,value,row,spot):
   #print("Type: " + str(type) + "  Value: " + value)
   if (type==0): #Pin name on board
     box0 = dwg.add(dwg.rect((rowwidth*spot+offset,row*rowheight), (width,height), 1, 1, stroke='black', opacity=0.3, fill='white'))
-    text0 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height),font_size=fontsize, font_family='Trebuchet MS',  fill='black'))
+    text0 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height-2), font_size=fontsize, font_family='Trebuchet MS',  fill='black'))
     #print("Box0, in white with " + value + " written in black")
 
   elif(type==1): #Power
     box1 = dwg.add(dwg.rect((rowwidth*spot+offset,row*rowheight), (width,height), 1, 1, stroke='red', opacity=0.8, fill='red'))
-    text1 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height),font_size=fontsize, font_family='Trebuchet MS',  fill='black'))
+    text1 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height-2),font_size=fontsize, font_family='Trebuchet MS',  fill='black'))
     #print("Box1, in red with " + value + " written in black")
 
   elif(type==2): #GND
     box2 = dwg.add(dwg.rect((rowwidth*spot+offset,row*rowheight), (width,height), 1, 1, stroke='black', opacity=0.9, fill='black'))
-    text2 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height),font_size=fontsize, font_family='Trebuchet MS',  fill='white'))
+    text2 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height-2),font_size=fontsize, font_family='Trebuchet MS',  fill='white'))
     #print("Box2, in black with " + value + " written in white")
 
   elif(type==3):#Control
     box3 = dwg.add(dwg.rect((rowwidth*spot+offset,row*rowheight), (width,height), 1, 1, stroke='yellow', opacity=0.7, fill='yellow'))
-    text3 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height),font_size=fontsize, font_family='Trebuchet MS',  fill='black'))
+    text3 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height-2),font_size=fontsize, font_family='Trebuchet MS',  fill='black'))
     #print("Box3 in red with " + value + " written in black")
 
   elif(type==4):#Arduino Pin number
-    box4 = dwg.add(dwg.rect((rowwidth*spot+offset,row*rowheight), (width,height), 1, 1, stroke='green', opacity=0.3, fill='green'))
-    text4 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height),font_size=fontsize, font_family='Trebuchet MS',  fill='black'))
+    box4 = dwg.add(dwg.rect((rowwidth*spot+offset,row*rowheight), (width,height), 1, 1, stroke='darkolivegreen', opacity=0.3, fill='green'))
+    text4 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height-2),font_size=fontsize, font_family='Trebuchet MS',  fill='darkolivegreen'))
     #print("Box4 in green with " + value + " written in black")
 
   elif(type==5):#Port
     box5 = dwg.add(dwg.rect((rowwidth*spot+offset,row*rowheight), (width,height), 1, 1, stroke='blue', opacity=0.4, fill='blue'))
-    text5 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height),font_size=fontsize, font_family='Trebuchet MS',  fill='black'))
+    text5 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height-2),font_size=fontsize, font_family='Trebuchet MS',  fill='black'))
     #print("Box5 in blue with " + value + " written in black")
 
-  elif(type==6):#Analog Pin
-    box6 = dwg.add(dwg.rect((rowwidth*spot+offset,row*rowheight), (width,height), 1, 1, stroke='purple', opacity=0.4, fill='purple'))
-    text6 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height),font_size=fontsize, font_family='Trebuchet MS',  fill='black'))
+  elif(type==6):#CAN
+    box6 = dwg.add(dwg.rect((rowwidth*spot+offset,row*rowheight), (width,height), 1, 1, stroke='purple', opacity=0.6, fill='darkmagenta'))
+    text6 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height-2),font_size=fontsize, font_family='Trebuchet MS',  fill='midnightblue'))
     #print("Box6 in purple with " + value + " written in black")
 
   elif(type==7):#PWM
-    box7 = dwg.add(dwg.rect((rowwidth*spot+offset,row*rowheight), (width,height), 1, 1, stroke='yellow', opacity=0.3, fill='yellow'))
-    text7 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height),font_size=fontsize, font_family='Trebuchet MS',  fill='black'))
+    box7 = dwg.add(dwg.rect((rowwidth*spot+offset,row*rowheight), (width,height), 1, 1, stroke='darkgoldenrod', opacity=0.3, fill='yellow'))
+    text7 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height-2),font_size=fontsize, font_family='Trebuchet MS',  fill='darkgoldenrod'))
     #print("Box7 in yellow with " + value + " written in black")
 
   elif(type==8):#Serial
     box8 = dwg.add(dwg.rect((rowwidth*spot+offset,row*rowheight), (width,height), 1, 1, stroke='grey', opacity=0.3, fill='grey'))
-    text8 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height),font_size=fontsize, font_family='Trebuchet MS',  fill='black'))
+    text8 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height-2),font_size=fontsize-2, font_family='Trebuchet MS',  fill='black'))
     #print("Box8 in grey with " + value + " written in black")
 
-  elif(type==9):#External Interupt
+  elif(type==9):#TIM
     box9 = dwg.add(dwg.rect((rowwidth*spot+offset,row*rowheight), (width,height), 1, 1, stroke='purple', opacity=0.2, fill='purple'))
-    text9 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height),font_size=fontsize, font_family='Trebuchet MS',  fill='black'))
+    text9 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height-2),font_size=fontsize-2, font_family='Trebuchet MS',  fill='indigo'))
     #print("Box9 in purple with " + value + " written in black")
 
   elif(type==10):#Pin Chg Int
     box10 = dwg.add(dwg.rect((rowwidth*spot+offset,row*rowheight), (width,height), 1, 1, stroke='orange', opacity=0.5, fill='orange'))
-    text10 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height),font_size=fontsize, font_family='Trebuchet MS',  fill='black'))
+    text10 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height-2),font_size=fontsize, font_family='Trebuchet MS',  fill='black'))
     #print("Box10 in orange with " + value + " written in black")
 
   elif(type==11):#JTAG
-    box11 = dwg.add(dwg.rect((rowwidth*spot+offset,row*rowheight), (width,height), 1, 1, stroke='black', opacity=0.3, fill='slategray'))
-    text11 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height),font_size=fontsize-2, font_family='Trebuchet MS',  fill='black'))
+    box11 = dwg.add(dwg.rect((rowwidth*spot+offset,row*rowheight), (width,height), 1, 1, stroke='black', opacity=0.7, fill='slategray'))
+    text11 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height-2),font_size=fontsize-2, font_family='Trebuchet MS',  fill='black'))
     #print("Box11 in blue with " + value + " written in black")
 
   elif(type==12):#SPI
-    box12 = dwg.add(dwg.rect((rowwidth*spot+offset,row*rowheight), (width,height), 1, 1, stroke='blue', opacity=0.1, fill='blue'))
-    text12 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height),font_size=fontsize, font_family='Trebuchet MS',  fill='black'))
+    box12 = dwg.add(dwg.rect((rowwidth*spot+offset,row*rowheight), (width,height), 1, 1, stroke='darkslategray', opacity=0.4, fill='cadetblue'))
+    text12 = dwg.add(dwg.text(str(value), insert=(spot*rowwidth+offset+indent,row*rowheight+height-2),font_size=fontsize-2, font_family='Trebuchet MS',  fill='darkslategray'))
     #print("Box12 in blue with " + value + " written in black")
 	#to add more, change elif statement, stroke color, fill color, text color, variable names (box and text) and print statement, also change 'fields' global variable
 #end writeField
