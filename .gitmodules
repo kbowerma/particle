@@ -4,3 +4,6 @@
 [submodule "photon_firmware/apps/banjo_monkey"]
 	path = photon_firmware/apps/banjo_monkey
 	url = git@github.com:kbowerma/banjo_monkey.git
+[submodule "hapi-particle"]
+	path = hapi-particle
+	url = git@github.com:kbowerma/hapi-particle.git
